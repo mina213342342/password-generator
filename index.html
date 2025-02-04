@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure Password Generator</title>
+  <style>
+    /* Welcome Screen Styles */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .welcome-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a237e, #0d47a1, #311b92);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      backdrop-filter: blur(10px);
+      transition: all 1s ease;
+    }
+
+    .welcome-content {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 25px;
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .welcome-title {
+      font-size: 3.5em;
+      margin: 0;
+      background: linear-gradient(45deg, #00e676, #00b0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .welcome-subtitle {
+      font-size: 1.2em;
+      margin: 20px 0;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .start-button {
+      padding: 18px 50px;
+      font-size: 1.2em;
+      margin-top: 30px;
+      background: transparent;
+      border: 2px solid #00e676;
+      border-radius: 30px;
+      color: #00e676;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .start-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0,230,118,0.3),
+        transparent
+      );
+      transition: 0.5s;
+    }
+
+    .start-button:hover::before {
+      left: 100%;
+    }
+
+    .start-button:hover {
+      background: rgba(0,230,118,0.1);
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(0,230,118,0.3);
+    }
+
+    /* Particles Background */
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    /* Main Interface Styles */
+    body {
+      font-family: 'Segoe UI', system-ui;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      overflow-x: hidden;
+      background: #121212;
+      color: #ffffff;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 30px;
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      box-shadow: 
+        0 8px 32px rgba(0,0,0,0.1),
+        inset 0 4px 8px rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    h1 {
+      margin: 0 0 30px;
+      font-size: 2.5em;
+      background: linear-gradient(135deg, #00e676, #00b0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 10px rgba(0,230,118,0.2);
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 90%;
+      padding: 15px;
+      font-size: 1.1em;
+      margin: 15px 0;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: #00e676;
+      box-shadow: 0 0 15px rgba(0,230,118,0.3);
+    }
+
+    .option-container {
+      margin: 25px 0;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .option-item label {
+      font-size: 1em;
+      color: #00b0ff;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #00e676;
+    }
+
+    /* Strength Meter Styles */
+    .strength-meter {
+      margin: 20px 0;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #strength-bar {
+      height: 100%;
+      width: 0;
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-radius: 4px;
+    }
+
+    .very-weak { background: #ff4444; }
+    .weak { background: #ffbb33; }
+    .medium { background: #fdd835; }
+    .strong { background: #00C851; }
+    .very-strong { background: #00ff88; }
+
+    .strength-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 0.8em;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .strength-label {
+      transition: all 0.3s ease;
+    }
+
+    .active-label {
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* Control Buttons */
+    .buttons {
+      margin: 25px 0;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    button {
+      padding: 15px 35px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00e676 30%, #00b0ff 100%);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 25%,
+        rgba(255,255,255,0.2) 50%,
+        transparent 75%
+      );
+      transition: left 0.6s;
+    }
+
+    button:hover::after {
+      left: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(0,230,118,0.4);
+    }
+
+    /* Messages */
+    .copy-message {
+      margin: 15px 0;
+      padding: 12px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-weight: bold;
+    }
+
+    .warning {
+      margin-top: 25px;
+      color: #ff5252;
+      font-size: 0.9em;
+      padding: 15px;
+      background: rgba(255,82,82,0.1);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Welcome Screen -->
+  <div class="welcome-screen" id="welcomeScreen">
+    <div class="welcome-content">
+      <h1 class="welcome-title"> Password Generator</h1>
+      <p class="welcome-subtitle">Generate Strong & Secure Passwords Instantly</p>
+      <button class="start-button" onclick="hideWelcomeScreen()">Get Started</button>
+    </div>
+  </div>
+
+  <!-- Particles Background -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Main Interface -->
+  <div class="container">
+    <h1>Password Generator</h1>
+    
+    <input type="text" id="password" readonly placeholder="Click generate to create password">
+    
+    <label for="length">Password Length:</label>
+    <input type="number" id="length" value="16" min="1" max="64">
+
+    <div class="option-container">
+      <div class="option-item">
+        <input type="checkbox" id="symbols" checked>
+        <label for="symbols"> Symbols</label>
+      </div>
+      <div class="option-item">
+        <input type="checkbox" id="numbers" checked>
+        <label for="numbers"> Numbers</label>
+      </div>
+      <div class="option-item">
+        <input type="checkbox" id="lowercase" checked>
+        <label for="lowercase"> Lowercase</label>
+      </div>
+      <div class="option-item">
+        <input type="checkbox" id="uppercase" checked>
+        <label for="uppercase"> Uppercase</label>
+      </div>
+    </div>
+    
+    <div class="strength-meter">
+      <div id="strength-bar" class="very-weak"></div>
+    </div>
+    <div class="strength-labels">
+      <span class="strength-label" id="label-very-weak">Very Weak</span>
+      <span class="strength-label" id="label-weak">Weak</span>
+      <span class="strength-label" id="label-medium">Medium</span>
+      <span class="strength-label" id="label-strong">Strong</span>
+      <span class="strength-label" id="label-very-strong">Very Strong</span>
+    </div>
+
+    <div class="buttons">
+      <button onclick="generatePassword()"> Generate</button>
+      <button onclick="copyPassword()"> Copy</button>
+    </div>
+    
+    <div id="copy-message" class="copy-message"></div>
+
+    <div class="warning">
+       ⚠️ Generated passwords are not stored - save them immediately!
+    </div>
+  </div>
+
+  <script>
+    // Welcome Screen Management
+    function hideWelcomeScreen() {
+      const welcomeScreen = document.getElementById('welcomeScreen');
+      welcomeScreen.style.opacity = '0';
+      welcomeScreen.style.pointerEvents = 'none';
+      initParticles();
+      generatePassword();
+      setTimeout(() => welcomeScreen.style.display = 'none', 1000);
+    }
+
+    // Particles System
+    class Particle {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * this.canvas.width;
+        this.y = Math.random() * this.canvas.height;
+        this.velocity = {
+          x: (Math.random() - 0.5) * 2,
+          y: (Math.random() - 0.5) * 2
+        };
+        this.alpha = Math.random() * 0.4 + 0.1;
+        this.size = Math.random() * 3 + 1;
+      }
+
+      update() {
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+
+        if (this.x < 0 || this.x > this.canvas.width) this.velocity.x *= -1;
+        if (this.y < 0 || this.y > this.canvas.height) this.velocity.y *= -1;
+      }
+
+      draw() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        this.ctx.fillStyle = `rgba(0, 230, 118, ${this.alpha})`;
+        this.ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      const canvas = document.getElementById('particles-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particles = Array.from({length: 150}, () => new Particle(canvas));
+      }
+
+      function animate() {
+        ctx.fillStyle = 'rgba(18, 18, 18, 0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+        
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+      animate();
+    }
+
+    // Password Generation
+    function getRandomChar(charset) {
+      const array = new Uint32Array(1);
+      window.crypto.getRandomValues(array);
+      return charset[array[0] % charset.length];
+    }
+
+    function generatePassword() {
+      const lengthInput = document.getElementById('length');
+      const lengthValue = lengthInput.value.trim();
+
+      // Validate input
+      if (!lengthValue) {
+        showMessage('⚠️ Please enter password length!', '#ff5252');
+        lengthInput.focus();
+        return;
+      }
+
+      const lengthNum = parseInt(lengthValue);
+      if (isNaN(lengthNum)) {
+        showMessage('⚠️ Invalid number format!', '#ff5252');
+        lengthInput.focus();
+        return;
+      }
+
+      // Adjust length to be within 1-64 range
+      let length = Math.min(Math.max(lengthNum, 1), 64);
+      
+      // Show adjustment message if needed
+      if (lengthNum !== length) {
+        document.getElementById('length').value = length;
+        const msg = lengthNum > 64 
+          ? '⚠️ Maximum length is 64 - Auto-adjusted!' 
+          : '⚠️ Minimum length is 1 - Auto-adjusted!';
+        showMessage(msg, '#ffd740');
+      }
+
+      // Get selected options
+      let options = {
+        symbols: document.getElementById('symbols').checked,
+        numbers: document.getElementById('numbers').checked,
+        lowercase: document.getElementById('lowercase').checked,
+        uppercase: document.getElementById('uppercase').checked
+      };
+
+      // Auto-adjust for lengths 1-3 when all options selected
+      if (length >= 1 && length <= 3 && Object.values(options).every(v => v)) {
+        const types = ['symbols', 'numbers', 'lowercase', 'uppercase'];
+        const selectedTypes = new Set();
+        
+        // Select unique types equal to password length
+        while(selectedTypes.size < length) {
+          selectedTypes.add(types[Math.floor(Math.random() * types.length)]);
+        }
+
+        // Update options
+        options = {
+          symbols: selectedTypes.has('symbols'),
+          numbers: selectedTypes.has('numbers'),
+          lowercase: selectedTypes.has('lowercase'),
+          uppercase: selectedTypes.has('uppercase')
+        };
+      }
+
+      // Validate at least one option
+      const selectedOptions = Object.values(options).filter(v => v);
+      if (selectedOptions.length === 0) {
+        showMessage(' Please select at least one character type!', '#ff5252');
+        return;
+      }
+
+      // Validate minimum length
+      const minRequiredLength = selectedOptions.length;
+      if (length < minRequiredLength) {
+        showMessage(` Minimum length for selected options is ${minRequiredLength}`, '#ff5252');
+        return;
+      }
+
+      // Character sets
+      const charSets = {
+        symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?',
+        numbers: '0123456789',
+        lowercase: 'abcdefghijklmnopqrstuvwxyz',
+        uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      };
+
+      // Build character pool
+      let selectedChars = '';
+      let mandatoryChars = [];
+      
+      for (const [type, enabled] of Object.entries(options)) {
+        if (enabled) {
+          selectedChars += charSets[type];
+          if (mandatoryChars.length < length) {
+            mandatoryChars.push(getRandomChar(charSets[type]));
+          }
+        }
+      }
+
+      // Generate remaining characters
+      const remainingLength = length - mandatoryChars.length;
+      const randomChars = Array.from({length: Math.max(remainingLength, 0)}, () => 
+        getRandomChar(selectedChars)
+      );
+
+      // Combine and shuffle
+      const password = [...mandatoryChars, ...randomChars]
+        .sort(() => Math.random() - 0.5)
+        .join('');
+
+      document.getElementById('password').value = password;
+      updateStrengthMeter(password);
+    }
+
+    // Strength Meter Algorithm
+    function calculatePasswordStrength(password) {
+      let score = 0;
+      const minLength = 8;
+      const maxLength = 64;
+      
+	  // عوامل القياس
+      const length = password.length;
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasNumbers = /\d/.test(password);
+      const hasSymbols = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+      const uniqueChars = new Set(password).size;
+      
+      // حساب النقاط
+      score += Math.min(length * 3, 60); // 3 نقاط لكل حرف (حد أقصى 60)
+      
+      // تنوع الأحرف
+      const charTypes = [hasUpper, hasLower, hasNumbers, hasSymbols].filter(Boolean).length;
+      score += (charTypes - 1) * 15; // 15 نقطة لكل نوع إضافي
+      
+      // عقوبات
+      const repeatPenalty = (length - uniqueChars) * 2;
+      const sequencePenalty = findSequences(password) * 3;
+      const commonPatternPenalty = checkCommonPatterns(password) ? 30 : 0;
+      
+      // تطبيق العقوبات
+      score -= repeatPenalty + sequencePenalty + commonPatternPenalty;
+      
+      // حدود النتيجة
+      return Math.max(0, Math.min(score, 100));
+    }
+
+    function updateStrengthMeter(password) {
+      const strengthBar = document.getElementById('strength-bar');
+      const labels = document.querySelectorAll('.strength-label');
+      
+      const strength = calculatePasswordStrength(password);
+      const width = (strength / 100) * 100;
+      
+      // تحديث المظهر
+      strengthBar.style.width = width + '%';
+      labels.forEach(label => label.classList.remove('active-label'));
+      
+      // تحديد التصنيف
+      let className = 'very-weak';
+      if (strength >= 20) className = 'weak';
+      if (strength >= 40) className = 'medium';
+      if (strength >= 60) className = 'strong';
+      if (strength >= 80) className = 'very-strong';
+      
+      strengthBar.className = className;
+      
+      // تفعيل التسمية المناسبة
+      const activeLabel = document.getElementById(`label-${className.replace(' ', '-')}`);
+      if (activeLabel) activeLabel.classList.add('active-label');
+    }
+
+    // Helper functions
+    function findSequences(str) {
+      const sequences = ['abcdefghijklmnopqrstuvwxyz', 'qwertyuiopasdfghjklzxcvbnm', '1234567890'];
+      let count = 0;
+      
+      sequences.forEach(seq => {
+        for (let i = 0; i < str.length - 3; i++) {
+          const sub = str.slice(i, i + 4).toLowerCase();
+          if (seq.includes(sub)) count++;
+        }
+      });
+      
+      return count;
+    }
+
+    function checkCommonPatterns(str) {
+      const common = [
+        'password', '123456', 'qwerty', 'letmein', 
+        'admin', 'welcome', 'football', 'iloveyou',
+        'monkey', 'sunshine', 'password1', '12345678'
+      ];
+      return common.some(pattern => str.toLowerCase().includes(pattern));
+    }
+
+    // Copy Password
+    async function copyPassword() {
+      const password = document.getElementById('password').value;
+      
+      if (!password) {
+        showMessage('⚠️ Please generate a password first!', '#ff5252');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(password);
+        showMessage(' Copied to clipboard!', '#00e676');
+      } catch (err) {
+        showMessage('❌ Failed to copy!', '#ff5252');
+      }
+    }
+
+    function showMessage(text, color) {
+      const message = document.getElementById('copy-message');
+      message.textContent = text;
+      message.style.backgroundColor = color + '20';
+      message.style.color = color;
+      message.style.opacity = '1';
+      
+      setTimeout(() => message.style.opacity = '0', 2000);
+    }
+
+    // Page Leave Warning
+   
+   /*window.onbeforeunload = () => {
+      return 'Are you sure you want to leave? Your password will be lost.';
+    }*/
+
+    // Initial Generation
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!document.getElementById('password').value) {
+        generatePassword();
+      }
+    });
+  </script>
+</body>
+</html>
